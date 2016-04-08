@@ -146,21 +146,6 @@ public class SelectDebugConfigurationComboBoxAction extends AbstractPerspectiveA
         dropDownHeaderWidget.selectElement(configuration.getName());
     }
 
-    /** Returns configuration by it's name. */
-    @Nullable
-    public DebugConfiguration getConfigurationByName(String name) {
-        if (configurations.isEmpty()) {
-            return null;
-        }
-
-        for (DebugConfiguration configuration : configurations) {
-            if (configuration.getName().equals(name)) {
-                return configuration;
-            }
-        }
-        return null;
-    }
-
     /**
      * Load all saved debug configurations.
      *

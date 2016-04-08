@@ -56,6 +56,7 @@ public class DebuggerExtension {
 
     private static final String GROUP_DEBUG_TOOLBAR                          = "DebugGroupToolbar";
     private static final String GROUP_DEBUG_CONFIGURATIONS_LIST_DISPLAY_NAME = "Debug";
+    private static final String EDIT_DEBUG_CONF_ID                           = "editDebugConfigurations";
     private static final String DEBUG_ID                                     = "debug";
     private static final String DISCONNECT_DEBUG_ID                          = "disconnectDebug";
     private static final String STEP_INTO_ID                                 = "stepInto";
@@ -89,6 +90,7 @@ public class DebuggerExtension {
 
         // register actions
         actionManager.registerAction("selectDebugConfigurationComboBox", selectDebugConfigurationComboBoxAction);
+        actionManager.registerAction(EDIT_DEBUG_CONF_ID, editConfigurationsAction);
         actionManager.registerAction(DEBUG_ID, debugAction);
         actionManager.registerAction(DISCONNECT_DEBUG_ID, disconnectDebuggerAction);
         actionManager.registerAction(STEP_INTO_ID, stepIntoAction);
@@ -101,8 +103,8 @@ public class DebuggerExtension {
 
         // add actions in main menu
         runMenu.addSeparator();
-        runMenu.add(debugAction, LAST);
         runMenu.add(editConfigurationsAction, LAST);
+        runMenu.add(debugAction, LAST);
         runMenu.add(disconnectDebuggerAction, LAST);
         runMenu.addSeparator();
         runMenu.add(stepIntoAction, LAST);
@@ -147,7 +149,8 @@ public class DebuggerExtension {
         debugContextMenuGroup.addSeparator();
 
         // keys binding
-        keyBinding.getGlobal().addKey(new KeyBuilder().alt().shift().charCode(KeyCodeMap.F9).build(), DEBUG_ID);
+        keyBinding.getGlobal().addKey(new KeyBuilder().alt().shift().charCode(KeyCodeMap.F9).build(), EDIT_DEBUG_CONF_ID);
+        keyBinding.getGlobal().addKey(new KeyBuilder().shift().charCode(KeyCodeMap.F9).build(), DEBUG_ID);
         keyBinding.getGlobal().addKey(new KeyBuilder().action().charCode(KeyCodeMap.F2).build(), DISCONNECT_DEBUG_ID);
         keyBinding.getGlobal().addKey(new KeyBuilder().charCode(KeyCodeMap.F7).build(), STEP_INTO_ID);
         keyBinding.getGlobal().addKey(new KeyBuilder().charCode(KeyCodeMap.F8).build(), STEP_OVER_ID);

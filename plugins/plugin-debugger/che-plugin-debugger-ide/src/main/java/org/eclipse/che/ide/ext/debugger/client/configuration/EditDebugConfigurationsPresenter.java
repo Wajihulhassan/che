@@ -201,7 +201,7 @@ public class EditDebugConfigurationsPresenter implements EditDebugConfigurations
         final String configurationName;
 
         if (customName == null || customName.isEmpty()) {
-            configurationName = "new" + configurationType.getDisplayName();
+            configurationName = "Remote " + configurationType.getDisplayName();
         } else {
             if (!configurationNames.contains(customName)) {
                 return customName;
