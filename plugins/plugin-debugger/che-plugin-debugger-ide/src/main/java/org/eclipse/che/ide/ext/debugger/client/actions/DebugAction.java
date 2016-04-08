@@ -23,7 +23,6 @@ import org.eclipse.che.ide.debug.Debugger;
 import org.eclipse.che.ide.debug.DebuggerManager;
 import org.eclipse.che.ide.ext.debugger.client.DebuggerLocalizationConstant;
 import org.eclipse.che.ide.ext.debugger.client.DebuggerResources;
-import org.eclipse.che.ide.ui.dialogs.ConfirmCallback;
 import org.eclipse.che.ide.ui.dialogs.DialogFactory;
 
 import java.util.Collections;
@@ -79,11 +78,7 @@ public class DebugAction extends AbstractPerspectiveAction {
         if (debuggerManager.getActiveDebugger() != null) {
             dialogFactory.createMessageDialog(localizationConstants.connectToRemote(),
                                               localizationConstants.debuggerAlreadyConnected(),
-                                              new ConfirmCallback() {
-                                                  @Override
-                                                  public void accepted() {
-                                                  }
-                                              }).show();
+                                              null).show();
             return;
         }
 
