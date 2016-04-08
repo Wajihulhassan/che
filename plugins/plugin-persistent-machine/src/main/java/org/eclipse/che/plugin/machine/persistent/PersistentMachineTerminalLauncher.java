@@ -12,16 +12,19 @@ package org.eclipse.che.plugin.machine.persistent;
 
 import org.eclipse.che.api.core.ConflictException;
 import org.eclipse.che.api.core.util.ListLineConsumer;
+import org.eclipse.che.api.core.util.NoCloseLineConsumer;
 import org.eclipse.che.api.machine.server.exception.MachineException;
 import org.eclipse.che.api.machine.server.model.impl.CommandImpl;
 import org.eclipse.che.api.machine.server.spi.Instance;
 import org.eclipse.che.api.machine.server.spi.InstanceProcess;
 import org.eclipse.che.api.machine.server.terminal.MachineSpecificTerminalLauncher;
+import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * Launch websocket terminal in persistent machines.
@@ -29,6 +32,8 @@ import static com.google.common.base.MoreObjects.firstNonNull;
  * author Alexander Garagatyi
  */
 public class PersistentMachineTerminalLauncher implements MachineSpecificTerminalLauncher {
+    private static final Logger LOG = getLogger(PersistentMachineTerminalLauncher.class);
+
     public static final String TERMINAL_LAUNCH_COMMAND_PROPERTY = "machine.persistent.server.terminal.run_command";
     public static final String TERMINAL_LOCATION_PROPERTY       = "machine.persistent.server.terminal.location";
 
@@ -53,15 +58,17 @@ public class PersistentMachineTerminalLauncher implements MachineSpecificTermina
     @Override
     public void launchTerminal(Instance machine) throws MachineException {
         try {
-            InstanceProcess checkTerminalAlive = machine.createProcess(new CommandImpl("check if che websocket terminal is running",
-                                                                                       "ps ax | grep '" + runTerminalCommand + "'",
-                                                                                       null),
-                                                                       null);
+            InstanceProcess checkTerminalAlive = machine.createProcess(
+                    new CommandImpl("check if che websocket terminal is running",
+                                    "ps ax | grep '" + runTerminalCommand + "' | grep -v 'grep " + runTerminalCommand +
+                                    "' && echo 'found' || echo 'not found'",
+                                    null),
+                    null);
             ListLineConsumer lineConsumer = new ListLineConsumer();
             checkTerminalAlive.start(lineConsumer);
+            String checkAliveText = lineConsumer.getText();
 
-            // grep returned nothing, so there is no such process
-            if (lineConsumer.getLines().isEmpty()) {
+            if ("not found".equals(checkAliveText)) {
                 // todo check existing version of terminal, do not copy if it is up to date
                 machine.copy(archivePathProvider.getPath(firstNonNull(machine.getConfig().getArchitecture(), "linux_amd64")),
                              terminalLocation);
@@ -71,7 +78,9 @@ public class PersistentMachineTerminalLauncher implements MachineSpecificTermina
                                                                                       null),
                                                                       null);
 
-                startTerminal.start();// todo
+                startTerminal.start((NoCloseLineConsumer)LOG::info);// todo
+            } else if (!"found".equals(checkAliveText)) {
+                throw new MachineException("Websocket terminal state check failed. Error: " + checkAliveText);
             }
         } catch (ConflictException e) {
             throw new MachineException("Internal server error occurs on terminal launching.");
