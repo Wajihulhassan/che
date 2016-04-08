@@ -18,12 +18,26 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
+import org.eclipse.che.api.core.util.ListLineConsumer;
 import org.eclipse.che.api.machine.server.exception.MachineException;
+import org.eclipse.che.commons.lang.IoUtil;
 import org.eclipse.che.plugin.machine.persistent.ssh.SshMachineRecipe;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Map;
+
+import static java.lang.String.format;
 
 /**
  * Client for communication with persistent machine using ssh protocol.
@@ -78,11 +92,11 @@ public class SshClient {
     }
 
     //todo add method to read env vars by client
-    // ChannelExec exec = (ChannelExec)session.openChannel("exec");
-    // exec.setCommand("env");
+    // ChannelExec execAndGetCode = (ChannelExec)session.openChannel("execAndGetCode");
+    // execAndGetCode.setCommand("env");
     //envVars.entrySet()
 //    .stream()
-//    .forEach(envVariableEntry -> exec.setEnv(envVariableEntry.getKey(),
+//    .forEach(envVariableEntry -> execAndGetCode.setEnv(envVariableEntry.getKey(),
 //            envVariableEntry.getValue()));
 //     todo process output
 
@@ -106,13 +120,151 @@ public class SshClient {
     }
 
     public void copy(String sourcePath, String targetPath) throws MachineException {
+        File source = new File(sourcePath);
+        if (!source.exists()) {
+            throw new MachineException("Source of copying '" + sourcePath + "' doesn't exist.");
+        }
+        if (source.isDirectory()) {
+            copyRecursively(sourcePath, targetPath);
+        } else {
+            copyFile(sourcePath, targetPath);
+        }
+    }
+
+    private void copyRecursively(String sourceFolder, String targetFolder) throws MachineException {
+        // create target dir
         try {
-            ChannelSftp sftp = (ChannelSftp)session.openChannel("sftp");
+            int execCode = execAndGetCode("mkdir -p " + targetFolder);
+
+            if (execCode != 0) {
+                throw new MachineException(format("Creation of folder %s failed. Exit code is %s", targetFolder, execCode));
+            }
+        } catch (JSchException e) {
+            throw new MachineException(format("Creation of folder %s failed. Error: %s", targetFolder, e.getLocalizedMessage()));
+        }
+
+        // not normalized paths don't work
+        final String targetAbsolutePath = getAbsolutePath(targetFolder);
+
+        // copy files
+        ChannelSftp sftp = null;
+        try {
+            sftp = (ChannelSftp)session.openChannel("sftp");
+            sftp.connect(connectionTimeout);
+
+            final ChannelSftp finalSftp = sftp;
+            Files.walkFileTree(Paths.get(sourceFolder), new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    try {
+                        if (!attrs.isDirectory()) {
+                            copyFile(file.toString(),
+                                     Paths.get(targetAbsolutePath, file.getFileName().toString()).toString(), finalSftp);
+                        } else {
+                            finalSftp.mkdir(file.normalize().toString());
+                        }
+                    } catch (MachineException | SftpException e) {
+                        throw new IOException(format("Sftp copying of file %s failed. Error: %s", file, e.getLocalizedMessage()));
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (JSchException | IOException e) {
+            throw new MachineException("Copying failed. Error: " + e.getLocalizedMessage());
+        } finally {
+            if (sftp != null) {
+                sftp.disconnect();
+            }
+        }
+    }
+
+    private void copyFile(String sourcePath, String targetPath) throws MachineException {
+        ChannelSftp sftp = null;
+        try {
+            sftp = (ChannelSftp)session.openChannel("sftp");
             sftp.connect(connectionTimeout);
             // todo check that paths are absolute
-            sftp.put(sourcePath, targetPath);
-        } catch (JSchException | SftpException e) {
+            copyFile(sourcePath, targetPath, sftp);
+        } catch (JSchException e) {
             throw new MachineException("Sftp copying failed. Error: " + e.getLocalizedMessage());
+        } finally {
+            if (sftp != null) {
+                sftp.disconnect();
+            }
+        }
+    }
+
+    private void copyFile(String sourcePath, String absoluteTargetPath, ChannelSftp channelSftp) throws MachineException {
+        try {
+            channelSftp.put(sourcePath, absoluteTargetPath);
+
+            // apply permissions
+            File file = new File(sourcePath);
+            int permissions = 4;
+            if (file.canExecute()) {
+                permissions += 1;
+            }
+            if (file.canWrite()) {
+                permissions += 2;
+            }
+            channelSftp.chmod(permissions, absoluteTargetPath);
+        } catch (SftpException e) {
+            throw new MachineException(format("Sftp copying of file %s failed. Error: %s",
+                                              absoluteTargetPath,
+                                              e.getLocalizedMessage()));
+        }
+    }
+
+    private String getAbsolutePath(String path) throws MachineException {
+        try {
+            return execAndGetOutput("cd " + path + "; pwd");
+        } catch (JSchException | IOException | MachineException e) {
+            throw new MachineException("Target directory lookup failed. " + e.getLocalizedMessage());
+        }
+    }
+
+    private int execAndGetCode(String command) throws JSchException {
+        ChannelExec exec = null;
+        try {
+            exec = (ChannelExec)session.openChannel("exec");
+            exec.setCommand(command);
+            exec.connect(connectionTimeout);
+
+            return exec.getExitStatus();
+        } finally {
+            if (exec != null) {
+                exec.disconnect();
+            }
+        }
+    }
+
+    private String execAndGetOutput(String command) throws JSchException, MachineException, IOException {
+        ChannelExec exec = null;
+        try {
+            exec = (ChannelExec)session.openChannel("exec");
+            exec.setCommand(command);
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(exec.getInputStream()))) {
+
+                exec.connect(connectionTimeout);
+
+                if (exec.getExitStatus() != 0) {
+                    throw new MachineException(format("Error code: %s. Error: %s",
+                                                      exec.getExitStatus(),
+                                                      IoUtil.readAndCloseQuietly(exec.getErrStream())));
+                }
+
+                ListLineConsumer listLineConsumer = new ListLineConsumer();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    listLineConsumer.writeLine(line);
+                }
+                return listLineConsumer.getText();
+            }
+        } finally {
+            if (exec != null) {
+                exec.disconnect();
+            }
         }
     }
 }

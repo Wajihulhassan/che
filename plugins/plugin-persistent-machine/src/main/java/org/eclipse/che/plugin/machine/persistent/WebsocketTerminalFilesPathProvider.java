@@ -15,7 +15,6 @@ import org.eclipse.che.inject.ConfigurationProperties;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toMap;
@@ -30,16 +29,15 @@ public class WebsocketTerminalFilesPathProvider {
     private static final String CONFIGURATION_PREFIX         = "machine.persistent.server.terminal.path_to_archive.";
     private static final String CONFIGURATION_PREFIX_PATTERN = "machine\\.persistent\\.server\\.terminal\\.path_to_archive\\..+";
 
-    private HashMap<String, String> archivesPaths;
+    private Map<String, String> archivesPaths;
 
     @Inject
     public WebsocketTerminalFilesPathProvider(ConfigurationProperties configurationProperties) {
-        archivesPaths = new HashMap<>();
-        configurationProperties.getProperties(CONFIGURATION_PREFIX_PATTERN)
-                               .entrySet()
-                               .stream()
-                               .collect(toMap(entry -> entry.getKey().replaceFirst(CONFIGURATION_PREFIX, ""),
-                                              Map.Entry::getValue));
+        archivesPaths = configurationProperties.getProperties(CONFIGURATION_PREFIX_PATTERN)
+                                               .entrySet()
+                                               .stream()
+                                               .collect(toMap(entry -> entry.getKey().replaceFirst(CONFIGURATION_PREFIX, ""),
+                                                              Map.Entry::getValue));
     }
 
     @Nullable

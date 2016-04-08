@@ -74,7 +74,7 @@ public class PersistentMachineTerminalLauncher implements MachineSpecificTermina
                              terminalLocation);
 
                 InstanceProcess startTerminal = machine.createProcess(new CommandImpl("websocket terminal",
-                                                                                      "/bin/bash -c " + runTerminalCommand,
+                                                                                      runTerminalCommand,
                                                                                       null),
                                                                       null);
 
