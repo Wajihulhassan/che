@@ -33,6 +33,7 @@ import org.eclipse.che.git.impl.nativegit.LocalGitUserResolver;
 import org.eclipse.che.git.impl.nativegit.NativeGitConnectionFactory;
 import org.eclipse.che.ide.ext.java.jdi.server.DebuggerService;
 import org.eclipse.che.ide.extension.maven.server.inject.MavenModule;
+import org.eclipse.che.ide.gdb.server.GdbDebuggerService;
 import org.eclipse.che.inject.DynaModule;
 import org.eclipse.che.plugin.github.server.inject.GitHubModule;
 import org.eclipse.che.security.oauth.RemoteOAuthTokenProvider;
@@ -70,6 +71,7 @@ public class WsAgentModule extends AbstractModule {
 
         bind(ArchetypeGenerator.class);
         bind(DebuggerService.class);
+        bind(GdbDebuggerService.class);
 
         bind(GitUserResolver.class).to(LocalGitUserResolver.class);
         bind(GitConnectionFactory.class).to(NativeGitConnectionFactory.class);

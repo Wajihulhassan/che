@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.che.ide.ext.debugger.client.debug;
 
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.web.bindery.event.shared.EventBus;
 
@@ -76,13 +77,14 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
 
     public static final String LOCAL_STORAGE_DEBUGGER_KEY = "che-debugger";
 
-    protected final DtoFactory dtoFactory;
+    protected final DtoFactory         dtoFactory;
+    protected final FileTypeRegistry   fileTypeRegistry;
+    protected final FqnResolverFactory fqnResolverFactory;
 
     private final List<DebuggerObserver> observers;
     private final DebuggerServiceClient  service;
     private final LocalStorageProvider   localStorageProvider;
     private final EventBus               eventBus;
-    private final FqnResolverFactory     fqnResolverFactory;
     private final ActiveFileHandler      activeFileHandler;
     private final DebuggerManager        debuggerManager;
     private final String                 id;
@@ -94,7 +96,6 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
     private DebuggerInfo                           debuggerInfo;
     private Location                               currentLocation;
     private SubscriptionHandler<DebuggerEventList> debuggerEventsHandler;
-    private FileTypeRegistry                       fileTypeRegistry;
 
     private MessageBus messageBus;
 
@@ -325,13 +326,12 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
             Location location = dtoFactory.createDto(Location.class);
             location.setLineNumber(lineNumber + 1);
 
-            String mediaType = fileTypeRegistry.getFileTypeByFile(file).getMimeTypes().get(0);
-            final FqnResolver resolver = fqnResolverFactory.getResolver(mediaType);
-            if (resolver != null) {
-                location.setClassName(resolver.resolveFqn(file));
-            } else {
+            String fqn = pathToFqn(file);
+            if (fqn == null) {
                 return;
             }
+            location.setClassName(fqn);
+
 
             org.eclipse.che.ide.ext.debugger.shared.Breakpoint breakpoint =
                     dtoFactory.createDto(org.eclipse.che.ide.ext.debugger.shared.Breakpoint.class);
@@ -430,14 +430,20 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
 
         Promise<Void> promise = connect.then(new Function<DebuggerInfo, Void>() {
             @Override
-            public Void apply(DebuggerInfo arg) throws FunctionException {
+            public Void apply(final DebuggerInfo arg) throws FunctionException {
                 debuggerDescriptor.setInfo(arg.getName() + " " + arg.getVersion());
 
                 setDebuggerInfo(arg);
                 preserveDebuggerInfo();
                 startCheckingEvents();
 
-                service.start(arg.getId());
+                new Timer() {
+                    @Override
+                    public void run() {
+                        service.start(arg.getId());
+                    }
+                }.schedule(2000);
+
                 return null;
             }
         }).catchError(new Operation<PromiseError>() {
@@ -674,6 +680,8 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
      * @return file path
      */
     abstract protected List<String> resolveFilePathByLocation(@NotNull Location location);
+
+    abstract protected String pathToFqn(VirtualFile file);
 
     abstract protected DebuggerDescriptor toDescriptor(Map<String, String> connectionProperties);
 }

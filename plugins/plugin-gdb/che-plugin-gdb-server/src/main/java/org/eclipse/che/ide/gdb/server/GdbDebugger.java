@@ -23,8 +23,10 @@ import org.eclipse.che.ide.ext.debugger.shared.StepEvent;
 import org.eclipse.che.ide.ext.debugger.shared.Value;
 import org.eclipse.che.ide.ext.debugger.shared.Variable;
 import org.eclipse.che.ide.gdb.server.parser.GdbContinue;
+import org.eclipse.che.ide.gdb.server.parser.GdbDirectory;
 import org.eclipse.che.ide.gdb.server.parser.GdbInfoBreak;
 import org.eclipse.che.ide.gdb.server.parser.GdbInfoLine;
+import org.eclipse.che.ide.gdb.server.parser.GdbPType;
 import org.eclipse.che.ide.gdb.server.parser.GdbParseException;
 import org.eclipse.che.ide.gdb.server.parser.GdbPrint;
 import org.eclipse.che.ide.gdb.server.parser.GdbRun;
@@ -111,7 +113,9 @@ public class GdbDebugger {
         Gdb gdb;
         try {
             gdb = Gdb.start();
-            gdb.directory(srcDirectory);
+            GdbDirectory directory = gdb.directory(srcDirectory);
+            LOG.debug("Source directories: " + directory.getDirectories());
+
             gdb.file(file);
             if (port > 0) {
                 gdb.targetRemote(host, port);
@@ -234,7 +238,7 @@ public class GdbDebugger {
         try {
             Breakpoint breakpoint;
 
-            if (getPort() > 0) {
+            if (isRemoteConnection()) {
                 GdbContinue gdbContinue = gdb.cont();
                 breakpoint = gdbContinue.getBreakpoint();
             } else {
@@ -254,6 +258,10 @@ public class GdbDebugger {
         } catch (IOException | GdbParseException | InterruptedException e) {
             throw new GdbDebuggerException("Error during running.", e);
         }
+    }
+
+    private boolean isRemoteConnection() {
+        return getPort() > 0;
     }
 
     /**
@@ -386,11 +394,14 @@ public class GdbDebugger {
             List<Variable> variables = new ArrayList<>();
             for (Map.Entry<String, String> e : locals.entrySet()) {
                 String varName = e.getKey();
+                String value = e.getValue();
+                GdbPType gdbPType = gdb.ptype(varName);
 
                 Variable variable = newDto(Variable.class);
                 variable.setName(varName);
-                variable.setValue(e.getValue());
-                variable.setType(gdb.ptype(varName).getType());
+                variable.setValue(value);
+                variable.setType(gdbPType.getType());
+
                 variables.add(variable);
             }
 

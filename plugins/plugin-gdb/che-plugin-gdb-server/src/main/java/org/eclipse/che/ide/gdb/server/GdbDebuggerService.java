@@ -57,12 +57,12 @@ public class GdbDebuggerService {
     public DebuggerInfo create(@QueryParam("host") String host,
                                @QueryParam("port") @DefaultValue("0") int port,
                                @QueryParam("file") String file,
-                               @QueryParam("sources") String srcDirectory) throws GdbDebuggerException {
-        if (srcDirectory == null) {
-            srcDirectory = Paths.get(file).getParent().toString();
+                               @QueryParam("sources") String sources) throws GdbDebuggerException {
+        if (sources == null) {
+            sources = Paths.get(file).getParent().toString();
         }
 
-        GdbDebugger d = GdbDebugger.newInstance(host, port, file, srcDirectory);
+        GdbDebugger d = GdbDebugger.newInstance(host, port, file, sources);
         return DtoFactory.getInstance().createDto(DebuggerInfo.class)
                          .withHost(d.getHost())
                          .withPort(d.getPort())

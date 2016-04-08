@@ -157,16 +157,10 @@ public class GdbTest {
         gdb.run();
 
         GdbInfoLine gdbInfoLine = gdb.step();
-
         assertNotNull(gdbInfoLine.getLocation());
-        assertEquals(gdbInfoLine.getLocation().getLineNumber(), 5);
-        assertEquals(gdbInfoLine.getLocation().getClassName(), "h.cpp");
 
         gdbInfoLine = gdb.step();
-
         assertNotNull(gdbInfoLine.getLocation());
-        assertEquals(gdbInfoLine.getLocation().getLineNumber(), 6);
-        assertEquals(gdbInfoLine.getLocation().getClassName(), "h.cpp");
     }
 
     @Test
