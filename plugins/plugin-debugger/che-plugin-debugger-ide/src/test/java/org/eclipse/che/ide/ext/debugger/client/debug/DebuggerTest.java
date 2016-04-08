@@ -611,6 +611,11 @@ public class DebuggerTest extends BaseTest {
         }
 
         @Override
+        protected String pathToFqn(VirtualFile file) {
+            return file.getPath();
+        }
+
+        @Override
         protected DebuggerDescriptor toDescriptor(Map<String, String> connectionProperties) {
             return debuggerDescriptor;
         }

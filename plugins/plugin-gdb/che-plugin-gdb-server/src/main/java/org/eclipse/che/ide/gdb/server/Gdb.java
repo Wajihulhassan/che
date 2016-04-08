@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.che.ide.gdb.server;
 
+import org.eclipse.che.commons.annotation.Nullable;
 import org.eclipse.che.ide.gdb.server.parser.GdbBreak;
 import org.eclipse.che.ide.gdb.server.parser.GdbClear;
 import org.eclipse.che.ide.gdb.server.parser.GdbContinue;
@@ -20,6 +21,7 @@ import org.eclipse.che.ide.gdb.server.parser.GdbInfoArgs;
 import org.eclipse.che.ide.gdb.server.parser.GdbInfoBreak;
 import org.eclipse.che.ide.gdb.server.parser.GdbInfoLine;
 import org.eclipse.che.ide.gdb.server.parser.GdbInfoLocals;
+import org.eclipse.che.ide.gdb.server.parser.GdbInfoProgram;
 import org.eclipse.che.ide.gdb.server.parser.GdbPType;
 import org.eclipse.che.ide.gdb.server.parser.GdbParseException;
 import org.eclipse.che.ide.gdb.server.parser.GdbPrint;
@@ -122,9 +124,15 @@ public class Gdb extends GdbProcess {
     /**
      * `next` command.
      */
+    @Nullable
     public GdbInfoLine next() throws IOException, InterruptedException, GdbParseException {
         sendCommand("next");
         outputs.take();
+
+        if (infoProgram().getStoppedAddress() == null) {
+            return null;
+        }
+
         return infoLine();
     }
 
@@ -237,6 +245,14 @@ public class Gdb extends GdbProcess {
     public GdbInfoLine infoLine() throws IOException, InterruptedException, GdbParseException {
         sendCommand("info line");
         return GdbInfoLine.parse(outputs.take());
+    }
+
+    /**
+     * `info program` command.
+     */
+    public GdbInfoProgram infoProgram() throws IOException, InterruptedException, GdbParseException {
+        sendCommand("info program");
+        return GdbInfoProgram.parse(outputs.take());
     }
 
     private void sendCommand(String command) throws IOException {

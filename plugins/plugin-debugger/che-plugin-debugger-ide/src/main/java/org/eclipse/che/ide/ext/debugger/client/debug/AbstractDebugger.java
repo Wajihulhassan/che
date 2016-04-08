@@ -34,7 +34,6 @@ import org.eclipse.che.ide.debug.DebuggerManager;
 import org.eclipse.che.ide.debug.DebuggerObservable;
 import org.eclipse.che.ide.debug.DebuggerObserver;
 import org.eclipse.che.ide.dto.DtoFactory;
-import org.eclipse.che.ide.ext.debugger.client.fqn.FqnResolver;
 import org.eclipse.che.ide.ext.debugger.client.fqn.FqnResolverFactory;
 import org.eclipse.che.ide.ext.debugger.shared.BreakpointActivatedEvent;
 import org.eclipse.che.ide.ext.debugger.shared.BreakpointEvent;
@@ -332,7 +331,6 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
             }
             location.setClassName(fqn);
 
-
             org.eclipse.che.ide.ext.debugger.shared.Breakpoint breakpoint =
                     dtoFactory.createDto(org.eclipse.che.ide.ext.debugger.shared.Breakpoint.class);
             breakpoint.setLocation(location);
@@ -367,13 +365,11 @@ public abstract class AbstractDebugger implements Debugger, DebuggerObservable {
             Location location = dtoFactory.createDto(Location.class);
             location.setLineNumber(lineNumber + 1);
 
-            String mediaType = fileTypeRegistry.getFileTypeByFile(file).getMimeTypes().get(0);
-            final FqnResolver resolver = fqnResolverFactory.getResolver(mediaType);
-            if (resolver != null) {
-                location.setClassName(resolver.resolveFqn(file));
-            } else {
-                Log.warn(AbstractDebugger.class, "FqnResolver is not found");
+            String fqn = pathToFqn(file);
+            if (fqn == null) {
+                return;
             }
+            location.setClassName(fqn);
 
             org.eclipse.che.ide.ext.debugger.shared.Breakpoint breakpoint =
                     dtoFactory.createDto(org.eclipse.che.ide.ext.debugger.shared.Breakpoint.class);

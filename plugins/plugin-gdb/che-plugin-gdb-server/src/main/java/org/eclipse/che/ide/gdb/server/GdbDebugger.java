@@ -26,6 +26,7 @@ import org.eclipse.che.ide.gdb.server.parser.GdbContinue;
 import org.eclipse.che.ide.gdb.server.parser.GdbDirectory;
 import org.eclipse.che.ide.gdb.server.parser.GdbInfoBreak;
 import org.eclipse.che.ide.gdb.server.parser.GdbInfoLine;
+import org.eclipse.che.ide.gdb.server.parser.GdbInfoProgram;
 import org.eclipse.che.ide.gdb.server.parser.GdbPType;
 import org.eclipse.che.ide.gdb.server.parser.GdbParseException;
 import org.eclipse.che.ide.gdb.server.parser.GdbPrint;
@@ -254,6 +255,11 @@ public class GdbDebugger {
                 DebuggerEventList debuggerEventList = newDto(DebuggerEventList.class);
                 debuggerEventList.withEvents(Collections.singletonList(breakpointEvent));
                 publishWebSocketMessage(debuggerEventList, EVENTS_CHANNEL + id);
+            } else {
+                GdbInfoProgram gdbInfoProgram = gdb.infoProgram();
+                if (gdbInfoProgram.getStoppedAddress() == null) {
+                    disconnect();
+                }
             }
         } catch (IOException | GdbParseException | InterruptedException e) {
             throw new GdbDebuggerException("Error during running.", e);
@@ -270,6 +276,10 @@ public class GdbDebugger {
     public void stepOver() throws GdbDebuggerException {
         try {
             GdbInfoLine gdbInfoLine = gdb.next();
+            if (gdbInfoLine == null) {
+                disconnect();
+                return;
+            }
 
             StepEvent stepEvent = newDto(StepEvent.class);
             stepEvent.setType(DebuggerEvent.STEP);
@@ -289,6 +299,10 @@ public class GdbDebugger {
     public void stepInto() throws GdbDebuggerException {
         try {
             GdbInfoLine gdbInfoLine = gdb.step();
+            if (gdbInfoLine == null) {
+                disconnect();
+                return;
+            }
 
             StepEvent stepEvent = newDto(StepEvent.class);
             stepEvent.setType(DebuggerEvent.STEP);
@@ -308,6 +322,10 @@ public class GdbDebugger {
     public void stepOut() throws GdbDebuggerException {
         try {
             GdbInfoLine gdbInfoLine = gdb.finish();
+            if (gdbInfoLine == null) {
+                disconnect();
+                return;
+            }
 
             StepEvent stepEvent = newDto(StepEvent.class);
             stepEvent.setType(DebuggerEvent.STEP);
@@ -337,6 +355,11 @@ public class GdbDebugger {
                 DebuggerEventList debuggerEventList = newDto(DebuggerEventList.class);
                 debuggerEventList.withEvents(Collections.singletonList(breakpointEvent));
                 publishWebSocketMessage(debuggerEventList, EVENTS_CHANNEL + id);
+            } else {
+                GdbInfoProgram gdbInfoProgram = gdb.infoProgram();
+                if (gdbInfoProgram.getStoppedAddress() == null) {
+                    disconnect();
+                }
             }
         } catch (IOException | GdbParseException | InterruptedException e) {
             throw new GdbDebuggerException("Resume error.", e);
