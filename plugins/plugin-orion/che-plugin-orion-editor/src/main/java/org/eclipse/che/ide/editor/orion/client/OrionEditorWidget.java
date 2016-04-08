@@ -89,6 +89,7 @@ import org.eclipse.che.ide.jseditor.client.keymap.KeymapChangeEvent;
 import org.eclipse.che.ide.jseditor.client.keymap.KeymapChangeHandler;
 import org.eclipse.che.ide.jseditor.client.link.LinkedMode;
 import org.eclipse.che.ide.jseditor.client.position.PositionConverter;
+import org.eclipse.che.ide.jseditor.client.preference.editorsettings.property.EditorPropertyNameManager;
 import org.eclipse.che.ide.jseditor.client.prefmodel.KeymapPrefReader;
 import org.eclipse.che.ide.jseditor.client.requirejs.ModuleHolder;
 import org.eclipse.che.ide.jseditor.client.text.TextRange;
@@ -148,6 +149,7 @@ public class OrionEditorWidget extends CompositeEditorWidget implements HasChang
 
     private OrionDocument       embeddedDocument;
     private OrionKeyModeOverlay cheContentAssistMode;
+    private EditorPropertyNameManager editorPropertyNameManager;
 
     private Keymap                          keymap;
     private Provider<OrionKeyBindingModule> keyBindingModuleProvider;
@@ -173,7 +175,8 @@ public class OrionEditorWidget extends CompositeEditorWidget implements HasChang
                              final ContentAssistWidgetFactory contentAssistWidgetFactory,
                              final DialogFactory dialogFactory,
                              @Assisted final List<String> editorModes,
-                             @Assisted final WidgetInitializedCallback widgetInitializedCallback) {
+                             @Assisted final WidgetInitializedCallback widgetInitializedCallback,
+                             EditorPropertyNameManager editorPropertyNameManager) {
         this.keyBindingModuleProvider = keyBindingModuleProvider;
         this.contentAssistWidgetFactory = contentAssistWidgetFactory;
         this.moduleHolder = moduleHolder;
@@ -183,6 +186,7 @@ public class OrionEditorWidget extends CompositeEditorWidget implements HasChang
         initWidget(UIBINDER.createAndBindUi(this));
 
         this.keymapPrefReader = keymapPrefReader;
+        this.editorPropertyNameManager = editorPropertyNameManager;
 
         this.codeEditWidgetModule = moduleHolder.getModule("CodeEditWidget").cast();
         this.uiUtilsOverlay = moduleHolder.getModule("UiUtils");
@@ -767,6 +771,7 @@ public class OrionEditorWidget extends CompositeEditorWidget implements HasChang
 
         @Override
         public void apply(OrionEditorViewOverlay arg) throws OperationException {
+            Log.error(getClass(), "=== apply ===");
             editorViewOverlay = arg;
             editorOverlay = arg.getEditor();
 
@@ -802,6 +807,7 @@ public class OrionEditorWidget extends CompositeEditorWidget implements HasChang
             assistWidget = contentAssistWidgetFactory.create(OrionEditorWidget.this, cheContentAssistMode);
             gutter = initBreakpointRuler(moduleHolder);
 
+            Log.error(getClass(), "=== before update settings ===");
             editorViewOverlay.updateSettings(getEditorSettings());
 
             widgetInitializedCallback.initialized(OrionEditorWidget.this);

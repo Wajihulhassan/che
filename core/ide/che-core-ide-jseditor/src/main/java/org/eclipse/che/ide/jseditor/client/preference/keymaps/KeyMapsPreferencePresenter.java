@@ -20,6 +20,8 @@ import org.eclipse.che.ide.jseditor.client.keymap.KeymapChangeEvent;
 import org.eclipse.che.ide.jseditor.client.keymap.KeymapValuesHolder;
 import org.eclipse.che.ide.jseditor.client.preference.EditorPreferenceSection;
 import org.eclipse.che.ide.jseditor.client.prefmodel.KeymapPrefReader;
+import org.eclipse.che.ide.util.loging.Log;
+
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.inject.Inject;
 import com.google.web.bindery.event.shared.EventBus;

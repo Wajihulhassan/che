@@ -11,6 +11,7 @@
 package org.eclipse.che.ide.jseditor.client.keymap;
 
 import org.eclipse.che.ide.jseditor.client.editortype.EditorType;
+import org.eclipse.che.ide.util.loging.Log;
 
 import java.util.HashMap;
 import java.util.Iterator;
