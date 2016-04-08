@@ -47,7 +47,6 @@ export class CheLoaderCrane {
       scaleStep = 0.05,
       scaleMin = 0.6,
 
-      oldSteps = [],
       newStep,
       animationStopping = false,
       animationRunning = false;
@@ -81,10 +80,6 @@ export class CheLoaderCrane {
         setAnimation();
         setCurrentStep();
       }
-
-      if (oldSteps.indexOf(newVal) === -1) {
-        oldSteps.push(newVal);
-      }
     });
 
     let destroyResizeEvent;
@@ -92,11 +87,7 @@ export class CheLoaderCrane {
       return element.find('.che-loader-crane:visible').length;
     }, (craneIsVisible) => {
 
-      if (!craneIsVisible) {
-        // destroy event
-        if (angular.isFunction(destroyResizeEvent)) {
-          destroyResizeEvent();
-        }
+      if (angular.isFunction(destroyResizeEvent)) {
         return;
       }
 
@@ -121,10 +112,9 @@ export class CheLoaderCrane {
         animationRunning = true;
       });
       element.find('.che-loader-animation.trolley-block').bind('animationiteration', () => {
-        if (oldSteps.length){
-          setCurrentStep();
-        }
-        else if (animationStopping) {
+        setCurrentStep();
+
+        if (animationStopping) {
           setNoAnimation();
         }
       });
@@ -203,11 +193,11 @@ export class CheLoaderCrane {
         jqCrane.addClass('che-loader-no-animation');
       },
       setCurrentStep = () => {
-        for (let i = 0; i < oldSteps.length; i++) {
-          jqCrane.removeClass('step-' + oldSteps[i]);
-          jqCraneLoad.removeClass('layer-' + oldSteps[i]);
+        // clear all previously added 'step-#' and 'layer-#' classes
+        for (let i = 0; i < $scope.allSteps.length; i++) {
+          jqCrane.removeClass('step-' + i);
+          jqCraneLoad.removeClass('layer-' + i);
         }
-        oldSteps.length = 0;
 
         // avoid next layer blinking
         let currentLayer = element.find('.layers-in-box').find('.layer-'+newStep);
