@@ -137,6 +137,9 @@ public class PersistentMachineProcess implements InstanceProcess {
                     // todo how to manage disconnections due to network failures?
                     output.writeLine(line);
                 }
+                while ((line = errReader.readLine()) != null) {
+                    output.writeLine(line);
+                }
             }
         } catch (IOException | JSchException e) {
             throw new MachineException("Ssh machine command execution error:" + e.getLocalizedMessage());

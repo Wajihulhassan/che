@@ -44,7 +44,7 @@ public class PersistentMachineModule extends AbstractModule {
         terminalLaunchers.addBinding().to(PersistentMachineTerminalLauncher.class);
 
         bindConstant().annotatedWith(Names.named(PersistentMachineTerminalLauncher.TERMINAL_LAUNCH_COMMAND_PROPERTY))
-                      .to("~/che/terminal/che-websocket-terminal -addr :4411 -cmd /bin/bash -static ~/che/che-websocket-terminal/");
+                      .to("~/che/terminal/terminal -addr :4411 -cmd /bin/bash -static ~/che/terminal/");
 
         bindConstant().annotatedWith(Names.named(PersistentMachineTerminalLauncher.TERMINAL_LOCATION_PROPERTY))
                       .to("~/che/terminal/");
